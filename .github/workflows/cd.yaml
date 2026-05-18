@@ -69,6 +69,22 @@ jobs:
            --ignore-unfixed \
            --exit-code 0 > client-trivy-fs-report.txt
 
+  # UPLOAD FILE FOR CLIENT    
+
+        - name: Upload CLIENT JSON
+          uses: actions/upload-artifact@v7
+          with:
+            name: client-trivy-fs-report
+            path: client-trivy-fs-report.json
+            if-no-files-found: warn
+
+        - name: Upload CLIENT TABLE
+          uses: actions/upload-artifact@v7
+          with:
+            name: client-trivy-fs-report
+            path: client-trivy-fs-report.txt
+            if-no-files-found: warn
+
  
     Server-trivy-fs: 
       name: server trivy
@@ -101,27 +117,6 @@ jobs:
            --severity HIGH,CRITICAL \
            --ignore-unfixed \
            --exit-code 0 > server-table-report.txt
-
-
-  
-  
-# UPLOAD FILE FOR CLIENT    
-
-        - name: Upload CLIENT JSON
-          uses: actions/upload-artifact@v7
-          with:
-            name: client-trivy-fs-report
-            path: client-trivy-fs-report.json
-            if-no-files-found: warn
-
-        - name: Upload CLIENT TABLE
-          uses: actions/upload-artifact@v7
-          with:
-            name: client-trivy-fs-report
-            path: client-trivy-fs-report.txt
-            if-no-files-found: warn
-
-
 
 #UPLOAD FILE FOR SERVER:
         - name: uplpoad SEVER file
