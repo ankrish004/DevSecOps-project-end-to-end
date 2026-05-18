@@ -13,7 +13,7 @@ jobs:
         runs-on: ubuntu-latest 
         steps: 
             - name: code checkout 
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
             - name: gitleak scan
               run: | 
@@ -38,7 +38,7 @@ jobs:
        needs: gileak-scan
        steps:
         - name: code checkout 
-          uses: actions/checkout@v4
+          uses: actions/checkout@v6
           
         - name: install Trivy
           uses: aquasecurity/setup-trivy@v0.2.6
@@ -76,7 +76,7 @@ jobs:
       needs: gileak-scan
       steps:
         - name: code checkout
-          uses: actions/checkout@v4
+          uses: actions/checkout@v6
 
         - name: install trivy
           uses: aquasecurity/setup-trivy@v0.2.6
@@ -106,14 +106,14 @@ jobs:
         - name: uplpoad SEVER file
           uses: actions/upload-artifact@v4
           with:
-            name: server-trivy-report.json
+            name: server-trivy-report
             path: server-trivy-report.json
             if-no-files-found: warn
 
         - name: uplpoad CLIENT file
           uses: actions/upload-artifact@v4
           with:
-            name: client-trivy-fs-report.json
+            name: client-trivy-fs-report
             path: client-trivy-fs-report.json
             if-no-files-found: warn
 
