@@ -67,7 +67,7 @@ jobs:
            --format table \
            --severity HIGH,CRITICAL \
            --ignore-unfixed \
-           --exit-code 0 > client-report.txt
+           --exit-code 0 > client-report-table.txt
 
   # UPLOAD FILE FOR CLIENT    
 
@@ -81,8 +81,8 @@ jobs:
         - name: Upload CLIENT TABLE
           uses: actions/upload-artifact@v7
           with:
-            name: client-report
-            path: client-report.txt
+            name: client-report-table
+            path: client-report-table.txt
             if-no-files-found: warn
 
  
