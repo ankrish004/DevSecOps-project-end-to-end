@@ -75,14 +75,14 @@ jobs:
           uses: actions/upload-artifact@v7
           with:
             name: client-trivy-fs-report
-            path: client-trivy-fs-report.json
+            path: client-report.json
             if-no-files-found: warn
 
         - name: Upload CLIENT TABLE
           uses: actions/upload-artifact@v7
           with:
             name: client-trivy-fs-report
-            path: client-trivy-fs-report.txt
+            path: client-report.txt
             if-no-files-found: warn
 
  
