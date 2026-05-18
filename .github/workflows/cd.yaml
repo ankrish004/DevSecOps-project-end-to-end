@@ -32,8 +32,105 @@ jobs:
                 path: gitleaks-report.json
                 if-no-files-found: warn
 
+    client-trivy-fs:
+       name: Client trivy FS scan
+       runs-on: ubuntu-latest
+       needs: gileak-scan
+       steps:
+        - name: code checkout 
+          uses: actions/checkout@v6
+          
+        - name: install Trivy
+          uses: aquasecurity/trivy-action@v0.36.0
+          with: 
+            version: latest
+            cache: true
+         
+        - name: 
+          run: |
+           trivy --version
+           which trivy
+           
+        - name: run trivy FS scan on client (JSON)
+          run : |
+           trivy fs ./client \
+           --format json \
+           --output client-trivy-fs-report.json \
+           --severity HIGH, CRITICAL \
+           --ignore-unfixed \
+           --exit-code 0               
+          #exit is to run the pipline even if it find error
+ 
+        - name: run trivy FS scan on client (TABLE)
+          run : |
+           trivy fs ./client \
+           --format table \
+           --severity HIGH, CRITICAL \
+           --ignore-unfixed \
+           --exit-code 0 > client-trivy-fs-report.txt
 
  
+    Server-trivy-fs: 
+      name: server trivy
+      runs-on: ubuntu-latest
+      needs: gileak-scan
+      steps:
+        - name: code checkout
+          uses: actions/checkout@v6
+
+        - name: install trivy
+          uses: aquasecurity/trivy-action@v0.36.0
+          with:
+            version: latest
+            cache: true
+
+        - name: run scan (JSON)
+          run: |
+
+           trivy fs ./server \
+           --format json \
+           --output server-trivy-report.json
+           --severity HIGH, CRITICAL \
+           --ignore-unfixed \
+           --exit-code 0 
+
+        - name: runnning scan for (TABLE)
+          run: |
+           trivy fs ./server \
+           --format table
+           --serverity HIGH, CRTITCAL \
+           --ignore-unfixed \
+           --exit-code 0 > server-table-report.txt
+
+
+        - name: uplpoad SEVER file
+          uses: actions/upload-artifact@v4
+          with:
+            name: server-trivy-report.json
+            path: server-trivy-report.json
+            if-no-files-found: warn
+
+        - name: uplpoad CLIENT file
+          uses: actions/upload-artifact@v4
+          with:
+            name: client-trivy-fs-report.json
+            path: client-trivy-fs-report.json
+            if-no-files-found: warn
+
+        - name: upload server TABLE
+          uses: actions/upload-artifact@v4
+          with:
+            name: server-table-report
+            path: server-table-report.txt
+            if-no-files-found: warn 
+      
+        - name: upload client TABLE
+          uses: actions/upload-artifact@v4
+          with:
+            name: client-trivy-fs-report
+            path: client-trivy-fs-report.txt
+            if-no-files-found: warn       
+      
 
 
     
