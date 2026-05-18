@@ -87,7 +87,7 @@ jobs:
         - name: upload
           uses: actions/upload-artifact@v7
           with:
-            name:  k8-report
+            name: k8-report
             path: k8-report.json
             if-no-files-found: warn 
 
@@ -108,7 +108,7 @@ jobs:
         - name: install checkov
           run: pip install checkov
 
-        - name: scan k8
+        - name: scan docker
           run: |
            checkov -d . \
            --framework Docker \
