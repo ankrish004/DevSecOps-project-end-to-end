@@ -55,7 +55,7 @@ jobs:
           run : |
            trivy fs ./client \
            --format json \
-           --output client-trivy-fs-report.json \
+           --output client-report.json \
            --severity HIGH,CRITICAL \
            --ignore-unfixed \
            --exit-code 0               
@@ -67,21 +67,21 @@ jobs:
            --format table \
            --severity HIGH,CRITICAL \
            --ignore-unfixed \
-           --exit-code 0 > client-trivy-fs-report.txt
+           --exit-code 0 > client-report.txt
 
   # UPLOAD FILE FOR CLIENT    
 
         - name: Upload CLIENT JSON
           uses: actions/upload-artifact@v7
           with:
-            name: client-trivy-fs-report
+            name: client-report
             path: client-report.json
             if-no-files-found: warn
 
         - name: Upload CLIENT TABLE
           uses: actions/upload-artifact@v7
           with:
-            name: client-trivy-fs-report
+            name: client-report
             path: client-report.txt
             if-no-files-found: warn
 
