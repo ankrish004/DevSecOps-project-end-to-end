@@ -8,7 +8,7 @@ on:
             - server/**
             - .github/workflows/cd.yaml
 jobs:
-    gileak-scan:
+    gitleak-scan:
         name: Gitleak scan
         runs-on: ubuntu-latest 
         steps: 
@@ -32,10 +32,100 @@ jobs:
                 path: gitleaks-report.json
                 if-no-files-found: warn
 
+#CHECKOV TERRAFORM
+    checkov-terraform:
+      name: Chekov Terraform Scan
+      runs-on: ubuntu-latest
+      needs: gitleak-scan
+      steps:
+        - name: check src
+          uses: actions/checkout@v6
+        
+#setip python
+        - name: install python
+          uses: actions/setup-python@v6
+          with:
+              python-version: '3.13' 
+# install checkov
+        - name: Install checkov
+          run: pip install checkov
+
+# run scan with checkov
+        - name: run scan
+          run: |
+            checkov -d . \
+            --framework terraform \
+            --output json > checkov-terraform-report.json || true
+          #upload the report file
+        - name: upload json file
+          uses: actions/upload-artifact@v7
+          with:
+            name: checkov-terraform-report
+            path: checkov-terraform-report.json
+            if-no-files-found: warn 
+
+    checkov-K8s:
+      name: Checkov scan Kubbenetes
+      runs-on: ubuntu-latest
+      needs: gitleak-scan
+      steps:
+        - name: checkout src
+          uses: actions/checkout@v6
+
+        - name: setup python 
+          uses: actions/setup-python@v6
+          with:
+            python-version: 3.13
+        - name: install checkov
+          run: pip install checkov
+
+        - name: scan k8
+          run: |
+           checkov -d . \
+           --framework kubernetes \
+           --output json > k8-report.json || true
+        - name: upload
+          uses: actions/upload-artifact@v7
+          with:
+            name:  k8-report
+            path: k8-report.json
+            if-no-files-found: warn 
+
+# DOCKERFILE SCAN:
+  
+    docker-file-checkov:
+      name: Checkov scan Dockerfile
+      runs-on: ubuntu-latest
+      needs: gitleak-scan
+      steps:
+        - name: checkout src
+          uses: actions/checkout@v6
+
+        - name: setup python 
+          uses: actions/setup-python@v6
+          with:
+            python-version: 3.13
+        - name: install checkov
+          run: pip install checkov
+
+        - name: scan k8
+          run: |
+           checkov -d . \
+           --framework Docker \
+           --output json > dockerfile-report.json || true
+        - name: upload
+          uses: actions/upload-artifact@v7
+          with:
+            name:  dockerfile-report
+            path: dockerfile-report.json
+            if-no-files-found: warn 
+
+#TRIVY
+
     client-trivy-fs:
        name: Client trivy FS scan
        runs-on: ubuntu-latest
-       needs: gileak-scan
+       needs: gitleak-scan
        steps:
         - name: code checkout 
           uses: actions/checkout@v6
@@ -89,7 +179,7 @@ jobs:
     Server-trivy-fs: 
       name: server trivy
       runs-on: ubuntu-latest
-      needs: gileak-scan
+      needs: gitleak-scan
       steps:
         - name: code checkout
           uses: actions/checkout@v6
@@ -132,3 +222,7 @@ jobs:
             name: server-table-report
             path: server-table-report.txt
             if-no-files-found: warn 
+
+
+
+
