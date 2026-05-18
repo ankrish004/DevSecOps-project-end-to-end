@@ -97,7 +97,7 @@ jobs:
         - name: runnning scan for (TABLE)
           run: |
            trivy fs ./server \
-           --format table
+           --format table \
            --serverity HIGH,CRTITCAL \
            --ignore-unfixed \
            --exit-code 0 > server-table-report.txt
