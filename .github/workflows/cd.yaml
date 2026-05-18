@@ -285,3 +285,51 @@ jobs:
           continue-on-error: true
 
 
+# running the test cases:
+
+    client-test:
+      runs-on: ubuntu-latest
+      needs:  client-lint
+      defaults: 
+        run:
+          working-directory: client
+      steps:
+        - name: checkout
+          uses: actions/checkout@v6
+          
+        - name: NodeJS setup
+          uses: actions/setup-node@v6
+          with:
+            node-version: 18
+            cache: npm
+            cache-dependency-path: client/package-lock.json
+          
+        - name: install ci
+          run: npm ci
+        - name: linit
+          run: npm test --if-present
+          continue-on-error: true      
+
+#server test
+    server-test:
+      runs-on: ubuntu-latest
+      needs:  Server-linting
+      defaults: 
+        run:
+          working-directory: client
+      steps:
+        - name: checkout
+          uses: actions/checkout@v6
+          
+        - name: NodeJS setup
+          uses: actions/setup-node@v6
+          with:
+            node-version: 18
+            cache: npm
+            cache-dependency-path: client/package-lock.json
+          
+        - name: install ci
+          run: npm ci
+        - name: linit
+          run: npm test --if-present
+          continue-on-error: true    
