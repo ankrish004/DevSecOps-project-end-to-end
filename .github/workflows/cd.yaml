@@ -89,7 +89,7 @@ jobs:
 
            trivy fs ./server \
            --format json \
-           --output server-trivy-report.json
+           --output server-trivy-report.json \
            --severity HIGH,CRITICAL \
            --ignore-unfixed \
            --exit-code 0 
