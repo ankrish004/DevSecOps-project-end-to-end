@@ -208,7 +208,7 @@ jobs:
            --ignore-unfixed \
            --exit-code 0 > server-table-report.txt
 
-#UPLOAD FILE FOR SERVER:
+
         - name: uplpoad SEVER file
           uses: actions/upload-artifact@v7
           with:
@@ -223,6 +223,65 @@ jobs:
             path: server-table-report.txt
             if-no-files-found: warn 
 
+# LINITING
 
+#cliten linting
+    client-lint:
+      name: client lint
+      runs-on: ubuntu-latest
+      needs: 
+        - client-trivy-fs
+        - checkov-K8s
+        - checkov-terraform
+        - docker-file-checkov
+      defaults:
+        run:
+          working-directory: client
+
+      steps: 
+        - name: checkout
+          uses:  actions/checkout@v6
+        
+        - name: steup-Node.JS
+          uses: actions/setup-node@v6
+          with:
+            node-version: 18
+            cache: npm
+            cache-dependency-path: client/package-lock.json
+
+        - name: Install dependency 
+          run: npm ci
+
+        - name: Run client lint
+          run: npm run lint --if-present
+          continue-on-error: true
+#server linting:
+    Server-linting:
+      name: server linting
+      runs-on: ubuntu-latest
+      needs: 
+        - Server-trivy-fs
+        - checkov-K8s
+        - checkov-terraform
+        - docker-file-checkov
+      defaults:
+        run: 
+          working-directory: server
+      steps:
+        - name: checkout
+          uses: actions/checkout@v6
+          
+        - name: NodeJS setup
+          uses: actions/setup-node@v6
+          with:
+            node-version: 18
+            cache: npm
+            cache-dependency-path: client/package-lock.json
+          
+        - name: install ci
+          run: npm ci
+        - name: linit
+          run: npm run lint --if-present
+          continue-on-error: true
 
 
