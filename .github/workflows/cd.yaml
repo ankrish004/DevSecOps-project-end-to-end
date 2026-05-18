@@ -26,7 +26,7 @@ jobs:
 
 
             - name: collect artifact
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                 name: artifact
                 path: gitleaks-report.json
@@ -104,28 +104,28 @@ jobs:
 
 
         - name: uplpoad SEVER file
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v7
           with:
             name: server-trivy-report
             path: server-trivy-report.json
             if-no-files-found: warn
 
         - name: uplpoad CLIENT file
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v7
           with:
             name: client-trivy-fs-report
             path: client-trivy-fs-report.json
             if-no-files-found: warn
 
         - name: upload server TABLE
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v7
           with:
             name: server-table-report
             path: server-table-report.txt
             if-no-files-found: warn 
       
         - name: upload client TABLE
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v7
           with:
             name: client-trivy-fs-report
             path: client-trivy-fs-report.txt
