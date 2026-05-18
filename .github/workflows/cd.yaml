@@ -98,7 +98,7 @@ jobs:
           run: |
            trivy fs ./server \
            --format table \
-           --severity HIGH,CRTITCAL \
+           --severity HIGH,CRITICAL \
            --ignore-unfixed \
            --exit-code 0 > server-table-report.txt
 
