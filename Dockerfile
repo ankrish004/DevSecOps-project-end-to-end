@@ -1,16 +1,14 @@
-# Stage 1 -> Build frontend
-FROM node:20-alpine AS client-build
+FROM node:20-alpine AS builder
 
 WORKDIR /app/client
 
 COPY client/package*.json ./
 RUN npm install
 
-COPY client/ ./
+COPY client/ .
 RUN npm run build
 
 
-# Stage 2 -> Production image
 FROM node:20-alpine
 
 WORKDIR /app/server
@@ -18,18 +16,18 @@ WORKDIR /app/server
 COPY server/package*.json ./
 RUN npm install --omit=dev
 
-COPY server/ ./
+COPY server/ .
 
-COPY --from=client-build /app/client/build ./public
+RUN mkdir -p ./public
+
+# React CRA
+COPY --from=builder /app/client/build ./public
+
+# For Vite use this instead:
+# COPY --from=builder /app/client/dist ./public
 
 ENV NODE_ENV=production
 
-RUN addgroup -S appgroup && \
-    adduser -S appuser -G appgroup && \
-    chown -R appuser:appgroup /app
+EXPOSE 3000
 
-USER appuser
-
-EXPOSE 5000
-
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
