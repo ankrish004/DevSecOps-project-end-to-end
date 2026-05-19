@@ -21,10 +21,10 @@ COPY server/ .
 RUN mkdir -p ./public
 
 # React CRA
-COPY --from=builder /app/client/build ./public
+#COPY --from=builder /app/client/build ./public
 
 # For Vite use this instead:
-# COPY --from=builder /app/client/dist ./public
+COPY --from=builder /app/client/dist ./public
 
 ENV NODE_ENV=production
 
