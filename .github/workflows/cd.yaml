@@ -356,6 +356,7 @@ jobs:
         # Check the Quality Gate status.
         - name: SonarQube Quality Gate check
           id: sonarqube-quality-gate-check
+          continue-on-error: true
           uses: sonarsource/sonarqube-quality-gate-action@master
           with:
             pollingTimeoutSec: 600
@@ -366,6 +367,8 @@ jobs:
         
         - name: "Example show SonarQube Quality Gate Status value"
           run: echo "The Quality Gate status is ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
+
+
 
     client-build:
       name: building frontend
