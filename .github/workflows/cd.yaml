@@ -467,8 +467,25 @@ jobs:
               name: image-report-table
               path: image-report-table.txt
               if-no-files-found: warn
+
+      #SBOM check:
+          - name: generate source SBOM
+            uses: anchore/sbom-action@v0
+            with:
+              path: .
+              format: spdx-json
+              output-file: source-spdx.json
+              upload-artifact: true
     
-     #DOCKER Psuh image 
+          - name: genrate image SBOM
+            uses: anchore/sbom-action@v0
+            with:
+              image: ankrish/nodejsapp:${{ github.run_id }}
+              format: spdx-json
+              output-file: image-spdx.json
+              upload-artifact: true
+
+     #DOCKER Push image 
           - name: push image
             uses: docker/build-push-action@v7
             with:
