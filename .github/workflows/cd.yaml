@@ -420,5 +420,56 @@ jobs:
               load: true
               push: false
               tags: | 
+                  ${{ vars.DOCKERHUB_USERNAME }}/nodejsapp:${{ github.run_id }}
+                  ${{ vars.DOCKERHUB_USERNAME }}/nodejsapp:latest
+ 
+          - name: install Trivy
+            uses: aquasecurity/setup-trivy@v0.2.6
+            with: 
+              version: latest
+              cache: true
+          - name: run trivy FS scan on client (JSON)
+            run : |
+                trivy image ankrish/nodejsapp:${{ github.run_id }} \
+                --format json \
+                --output image-report.json \
+                --severity HIGH,CRITICAL \
+                --ignore-unfixed \
+                --exit-code 0               
+    #exit is to run the pipline even if it find error
+    
+          - name: run trivy FS scan on image (TABLE)
+            run : |
+              trivy  ankrish/nodejsapp:${{ github.run_id }} \
+              --format table \
+              --severity HIGH,CRITICAL \
+              --ignore-unfixed \
+              --exit-code 0 > image-report-table.txt
+
+    # UPLOAD FILE FOR CLIENT    
+
+          - name: Upload CLIENT JSON
+            uses: actions/upload-artifact@v7
+            with:
+              name: image-report
+              path: image-report.json
+              if-no-files-found: warn
+
+          - name: Upload image TABLE
+            uses: actions/upload-artifact@v7
+            with:
+              name: image-report-table
+              path: image-report-table.txt
+              if-no-files-found: warn
+    
+     #DOCKER Psuh image 
+          - name: push image
+            uses: docker/build-push-action@v7
+            with:
+              push: true
+              tags: | 
                   ankrish/nodejsapp:${{ github.run_id }}
-                  ankrish/
+                  ankrish/nodejsapp:latest
+            
+
+          
