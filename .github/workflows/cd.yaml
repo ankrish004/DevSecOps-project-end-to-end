@@ -431,7 +431,9 @@ jobs:
             with: 
               version: latest
               cache: true
-          - name: run trivy FS scan on client (JSON)
+
+#run scan on image:
+          - name: run trivy image scan on client (JSON)
             run : |
                 trivy image ankrish/nodejsapp:${{ github.run_id }} \
                 --format json \
@@ -439,15 +441,16 @@ jobs:
                 --severity HIGH,CRITICAL \
                 --ignore-unfixed \
                 --exit-code 0               
-    #exit is to run the pipline even if it find error
-    
-          - name: run trivy FS scan on image (TABLE)
-            run : |
-              trivy  ankrish/nodejsapp:${{ github.run_id }} \
-              --format table \
-              --severity HIGH,CRITICAL \
-              --ignore-unfixed \
-              --exit-code 0 > image-report-table.txt
+#exit is to run the pipline even if it find error
+
+          - name: run trivy image scan (TABLE)
+            run: |
+              trivy image ankrish/nodejsapp:${{ github.run_id }} \
+                --format table \
+                --output image-report-table.txt \
+                --severity HIGH,CRITICAL \
+                --ignore-unfixed \
+                --exit-code 0
 
     # UPLOAD FILE FOR CLIENT    
 
