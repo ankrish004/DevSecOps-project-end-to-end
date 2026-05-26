@@ -493,6 +493,33 @@ jobs:
               tags: | 
                   ankrish/nodejsapp:${{ github.run_id }}
                   ankrish/nodejsapp:latest
-            
 
-          
+    update-manifest: 
+      name: Update Qa
+      needs: docker-build
+      runs-on: ubuntu-latest
+
+      permissions: 
+        contents: write
+
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Update image
+          run: |
+            sed -i "s|image: ankrish/nodejsapp:.*|image: ankrish/nodejsapp:${{ github.run_id }}|g" k8-manifest/qa/app-deployment.yaml
+
+        - name: Show updat manifest
+          run: |
+            cat k8-manifest/qa/app-deployment.yaml
+
+        - name: Commit and push changes
+          run: |
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+            git add k8-manifest/qa/app-deployment.yaml
+            git commit -m "Update image tag to ${{ github.run_id }} [skip ci]" || echo "No change"
+
+            git push origin qa
