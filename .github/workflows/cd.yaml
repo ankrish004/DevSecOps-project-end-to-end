@@ -1,0 +1,526 @@
+name: 
+on: 
+    push:
+        branches:
+            - qa
+        paths:
+          - 'client/**'
+          - 'server/**'
+          - 'k8-manifest/**'
+          - '.github/workflows/cd.yaml'
+jobs:
+    gitleak-scan:
+        name: Gitleak scan
+        runs-on: ubuntu-latest 
+        steps: 
+            - name: code checkout 
+              uses: actions/checkout@v6
+
+            - name: gitleak scan
+              run: | 
+                docker run --rm -v "${{ github.workspace }}:/repo" \
+                zricethezav/gitleaks:latest  detect \
+                --source=/repo \
+                --report-format=json \
+                --report-path=/repo/gitleaks-report.json \
+                --redact --exit-code 0
+
+
+            - name: collect artifact
+              uses: actions/upload-artifact@v7
+              with:
+                name: artifact
+                path: gitleaks-report.json
+                if-no-files-found: warn
+
+#CHECKOV TERRAFORM
+    checkov-terraform:
+      name: Chekov Terraform Scan
+      runs-on: ubuntu-latest
+      needs: gitleak-scan
+      steps:
+        - name: check src
+          uses: actions/checkout@v6
+        
+#setip python
+        - name: install python
+          uses: actions/setup-python@v6
+          with:
+              python-version: '3.13' 
+# install checkov
+        - name: Install checkov
+          run: pip install checkov
+
+# run scan with checkov
+        - name: run scan
+          run: |
+            checkov -d . \
+            --framework terraform \
+            --output json > checkov-terraform-report.json || true
+          #upload the report file
+        - name: upload json file
+          uses: actions/upload-artifact@v7
+          with:
+            name: checkov-terraform-report
+            path: checkov-terraform-report.json
+            if-no-files-found: warn 
+
+    checkov-K8s:
+      name: Checkov scan Kubbenetes
+      runs-on: ubuntu-latest
+      needs: gitleak-scan
+      steps:
+        - name: checkout src
+          uses: actions/checkout@v6
+
+        - name: setup python 
+          uses: actions/setup-python@v6
+          with:
+            python-version: 3.13
+        - name: install checkov
+          run: pip install checkov
+
+        - name: scan k8
+          run: |
+           checkov -d . \
+           --framework kubernetes \
+           --output json > k8-report.json || true
+        - name: upload
+          uses: actions/upload-artifact@v7
+          with:
+            name: k8-report
+            path: k8-report.json
+            if-no-files-found: warn 
+
+# DOCKERFILE SCAN:
+  
+    docker-file-checkov:
+      name: Checkov scan Dockerfile
+      runs-on: ubuntu-latest
+      needs: gitleak-scan
+      steps:
+        - name: checkout src
+          uses: actions/checkout@v6
+
+        - name: setup python 
+          uses: actions/setup-python@v6
+          with:
+            python-version: 3.13
+        - name: install checkov
+          run: pip install checkov
+
+        - name: scan docker
+          run: |
+           checkov -d . \
+           --framework Docker \
+           --output json > dockerfile-report.json || true
+        - name: upload
+          uses: actions/upload-artifact@v7
+          with:
+            name:  dockerfile-report
+            path: dockerfile-report.json
+            if-no-files-found: warn 
+
+#TRIVY
+
+    client-trivy-fs:
+       name: Client trivy FS scan
+       runs-on: ubuntu-latest
+       needs: gitleak-scan
+       steps:
+        - name: code checkout 
+          uses: actions/checkout@v6
+          
+        - name: install Trivy
+          uses: aquasecurity/setup-trivy@v0.2.6
+          with: 
+            version: latest
+            cache: true
+         
+        - name: checing the version
+          run: |
+           trivy --version
+           which trivy
+           
+        - name: run trivy FS scan on client (JSON)
+          run : |
+           trivy fs ./client \
+           --format json \
+           --output client-report.json \
+           --severity HIGH,CRITICAL \
+           --ignore-unfixed \
+           --exit-code 0               
+          #exit is to run the pipline even if it find error
+ 
+        - name: run trivy FS scan on client (TABLE)
+          run : |
+           trivy fs ./client \
+           --format table \
+           --severity HIGH,CRITICAL \
+           --ignore-unfixed \
+           --exit-code 0 > client-report-table.txt
+
+  # UPLOAD FILE FOR CLIENT    
+
+        - name: Upload CLIENT JSON
+          uses: actions/upload-artifact@v7
+          with:
+            name: client-report
+            path: client-report.json
+            if-no-files-found: warn
+
+        - name: Upload CLIENT TABLE
+          uses: actions/upload-artifact@v7
+          with:
+            name: client-report-table
+            path: client-report-table.txt
+            if-no-files-found: warn
+
+ 
+    Server-trivy-fs: 
+      name: server trivy
+      runs-on: ubuntu-latest
+      needs: gitleak-scan
+      steps:
+        - name: code checkout
+          uses: actions/checkout@v6
+
+        - name: install trivy
+          uses: aquasecurity/setup-trivy@v0.2.6
+          with:
+            version: latest
+            cache: true
+
+        - name: run scan (JSON)
+          run: |
+
+           trivy fs ./server \
+           --format json \
+           --output server-trivy-report.json \
+           --severity HIGH,CRITICAL \
+           --ignore-unfixed \
+           --exit-code 0 
+
+        - name: runnning scan for (TABLE)
+          run: |
+           trivy fs ./server \
+           --format table \
+           --severity HIGH,CRITICAL \
+           --ignore-unfixed \
+           --exit-code 0 > server-table-report.txt
+
+
+        - name: uplpoad SEVER file
+          uses: actions/upload-artifact@v7
+          with:
+            name: server-trivy-report
+            path: server-trivy-report.json
+            if-no-files-found: warn
+
+        - name: upload server TABLE
+          uses: actions/upload-artifact@v7
+          with:
+            name: server-table-report
+            path: server-table-report.txt
+            if-no-files-found: warn 
+
+# LINITING
+
+#cliten linting
+    client-lint:
+      name: client lint
+      runs-on: ubuntu-latest
+      needs: 
+        - client-trivy-fs
+        - checkov-K8s
+        - checkov-terraform
+        - docker-file-checkov
+      defaults:
+        run:
+          working-directory: client
+
+      steps: 
+        - name: checkout
+          uses:  actions/checkout@v6
+        
+        - name: steup-Node.JS
+          uses: actions/setup-node@v6
+          with:
+            node-version: 18
+            cache: npm
+            cache-dependency-path: client/package-lock.json
+
+        - name: Install dependency 
+          run: npm ci
+
+        - name: Run client lint
+          run: npm run lint --if-present
+          continue-on-error: true
+#server linting:
+    Server-linting:
+      name: server linting
+      runs-on: ubuntu-latest
+      needs: 
+        - Server-trivy-fs
+        - checkov-K8s
+        - checkov-terraform
+        - docker-file-checkov
+      defaults:
+        run: 
+          working-directory: server
+      steps:
+        - name: checkout
+          uses: actions/checkout@v6
+          
+        - name: NodeJS setup
+          uses: actions/setup-node@v6
+          with:
+            node-version: 18
+            cache: npm
+            cache-dependency-path: client/package-lock.json
+          
+        - name: install ci
+          run: npm ci
+        - name: linit
+          run: npm run lint --if-present
+          continue-on-error: true
+
+
+# running the test cases:
+
+    client-test:
+      runs-on: ubuntu-latest
+      needs:  client-lint
+      defaults: 
+        run:
+          working-directory: client
+      steps:
+        - name: checkout
+          uses: actions/checkout@v6
+          
+        - name: NodeJS setup
+          uses: actions/setup-node@v6
+          with:
+            node-version: 18
+            cache: npm
+            cache-dependency-path: client/package-lock.json
+          
+        - name: install ci
+          run: npm ci
+        - name: linit
+          run: npm test --if-present
+          continue-on-error: true      
+
+#server test
+    server-test:
+      runs-on: ubuntu-latest
+      needs:  Server-linting
+      defaults: 
+        run:
+          working-directory: client
+      steps:
+        - name: checkout
+          uses: actions/checkout@v6
+          
+        - name: NodeJS setup
+          uses: actions/setup-node@v6
+          with:
+            node-version: 18
+            cache: npm
+            cache-dependency-path: client/package-lock.json
+          
+        - name: install ci
+          run: npm ci
+        - name: linit
+          run: npm test --if-present
+          continue-on-error: true    
+
+    sonarqube:
+      name: Sonar analysis
+      runs-on: ubuntu-latest
+      needs: 
+        - server-test
+        - client-test
+      steps:
+        - uses: actions/checkout@v4
+          with:
+            # Disabling shallow clone is recommended for improving relevancy of reporting.
+            fetch-depth: 0
+
+        # Triggering SonarQube analysis as results of it are required by Quality Gate check.
+        - name: SonarQube Scan
+          uses: sonarsource/sonarqube-scan-action@master
+          env:
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+            SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+        # Check the Quality Gate status.
+        - name: SonarQube Quality Gate check
+          id: sonarqube-quality-gate-check
+          continue-on-error: true
+          uses: sonarsource/sonarqube-quality-gate-action@master
+          with:
+            pollingTimeoutSec: 600
+          env:
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+            SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }} #OPTIONAL
+
+        
+        - name: "Example show SonarQube Quality Gate Status value"
+          run: echo "The Quality Gate status is ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
+
+
+
+    client-build:
+      name: building frontend
+      runs-on: ubuntu-latest
+      needs: client-test
+
+      defaults:
+        run:
+          working-directory: client
+
+      steps: 
+        - name: checkout
+          uses: actions/checkout@v6
+          
+        - name: setup Node
+          uses: actions/setup-node@v6
+          with:
+            node-version: 18
+            cache: npm
+            cache-dependency-path: client/package-lock.json
+
+        - name: dependency
+          run: npm ci
+        - name: build 
+          run: npm run build --if-present
+
+#DOCKER
+
+    docker-build:
+        name: Docker build&push
+        runs-on: ubuntu-latest
+        needs: 
+          - client-build
+          - sonarqube
+        steps:
+          -
+            name: Login to Docker Hub
+            uses: docker/login-action@v4
+            with:
+              username: ${{ vars.DOCKERHUB_USERNAME }}
+              password: ${{ secrets.DOCKERHUB_TOKEN }}
+          -
+            name: Set up QEMU
+            uses: docker/setup-qemu-action@v4
+          -
+            name: Set up Docker Buildx
+            uses: docker/setup-buildx-action@v4
+          -
+            name: Build and push
+            uses: docker/build-push-action@v7
+            with:
+              load: true
+              push: false
+              tags: | 
+                  ${{ vars.DOCKERHUB_USERNAME }}/nodejsapp:${{ github.run_id }}
+                  ${{ vars.DOCKERHUB_USERNAME }}/nodejsapp:latest
+ 
+          - name: install Trivy
+            uses: aquasecurity/setup-trivy@v0.2.6
+            with: 
+              version: latest
+              cache: true
+
+#run scan on image:
+          - name: run trivy image scan on client (JSON)
+            run : |
+                trivy image ankrish/nodejsapp:${{ github.run_id }} \
+                --format json \
+                --output image-report.json \
+                --severity HIGH,CRITICAL \
+                --ignore-unfixed \
+                --exit-code 0               
+#exit is to run the pipline even if it find error
+
+          - name: run trivy image scan (TABLE)
+            run: |
+              trivy image ankrish/nodejsapp:${{ github.run_id }} \
+                --format table \
+                --output image-report-table.txt \
+                --severity HIGH,CRITICAL \
+                --ignore-unfixed \
+                --exit-code 0
+
+    # UPLOAD FILE FOR CLIENT    
+
+          - name: Upload CLIENT JSON
+            uses: actions/upload-artifact@v7
+            with:
+              name: image-report
+              path: image-report.json
+              if-no-files-found: warn
+
+          - name: Upload image TABLE
+            uses: actions/upload-artifact@v7
+            with:
+              name: image-report-table
+              path: image-report-table.txt
+              if-no-files-found: warn
+
+      #SBOM check:
+          - name: generate source SBOM
+            uses: anchore/sbom-action@v0
+            with:
+              path: .
+              format: spdx-json
+              output-file: source-spdx.json
+              upload-artifact: true
+    
+          - name: genrate image SBOM
+            uses: anchore/sbom-action@v0
+            with:
+              image: ankrish/nodejsapp:${{ github.run_id }}
+              format: spdx-json
+              output-file: image-spdx.json
+              upload-artifact: true
+
+     #DOCKER Push image 
+          - name: push image
+            uses: docker/build-push-action@v7
+            with:
+              push: true
+              tags: | 
+                  ankrish/nodejsapp:${{ github.run_id }}
+                  ankrish/nodejsapp:latest
+
+    update-manifest: 
+      name: Update Qa
+      needs: docker-build
+      runs-on: ubuntu-latest
+
+      permissions: 
+        contents: write
+
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Update image
+          run: |
+            sed -i "s|image: ankrish/nodejsapp:.*|image: ankrish/nodejsapp:${{ github.run_id }}|g" k8-manifest/qa/app-deployment.yaml
+
+        - name: Show updat manifest
+          run: |
+            cat k8-manifest/qa/app-deployment.yaml
+
+        - name: Commit and push changes
+          run: |
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+            git add k8-manifest/qa/app-deployment.yaml
+            git commit -m "Update image tag to ${{ github.run_id }} [skip ci]" || echo "No change"
+
+            git push origin qa

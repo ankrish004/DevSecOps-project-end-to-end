@@ -15,7 +15,7 @@ app.use(bodyParser.json());
 const db = mysql.createConnection({
   host: process.env.DB_HOST || 'localhost', // Use 'mysql' to connect to MySQL container
   user: process.env.DB_USER || 'appuser',
-  password: process.env.DB_PASSWORD || 'password123',
+  password: process.env.DB_PASSWORD || 'ankrish004',
   database: process.env.DB_NAME || 'test_db',
 });
 

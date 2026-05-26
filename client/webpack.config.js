@@ -5,7 +5,7 @@ module.exports = {
   entry: './src/index.js',
   output: {
     filename: 'bundle.js',
-    path: path.resolve(__dirname, 'public'), // Ensure this path is correct
+    path: path.resolve(__dirname, 'dist'), // Ensure this path is correct
   },
   module: {
     rules: [
