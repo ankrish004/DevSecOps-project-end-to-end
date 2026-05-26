@@ -3,10 +3,12 @@ on:
     push:
         branches:
             - qa
-        paths: 
-            - client/**
-            - server/**
-            - .github/workflows/cd.yaml
+
+        paths:
+          - 'client/**'
+          - 'server/**'
+          - 'k8-manifest/**'
+          - '.github/workflows/cd.yaml'
 jobs:
     gitleak-scan:
         name: Gitleak scan
